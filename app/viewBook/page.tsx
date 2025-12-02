@@ -1,37 +1,20 @@
 //@/app/viewBook/page.tsx
-/**
+/** 
  * Rôle :
  *  - Page principale pour visualiser, créer et gérer les livres et leurs nœuds.
- *  - Affiche la sélection d'un livre, puis le plan (BookNodes) et le contenu.
- *  - Utilise Zustand pour suivre l'état de la sélection.
+ *  - Structure Responsive :
+ *     - Mobile/Tablette : 1 colonne empilée.
+ *     - Desktop (lg) : 2 colonnes (1/3 gauche : navigation, 2/3 droite : contenu).
  * 
  * Composants utilisés :
- *  - @/components/creatBook/UserInfo
- *  - @/components/creatBook/BookManager (Dialog pour créer/éditer un livre)
- *  - @/components/creatBook/BookNodeManager (Affiche l'arbre hiérarchique)
- *  - @/components/creatBook/BookNodeContentManager (Éditeur de contenu)
- *  - @/components/creatBook/CommentManager (Section commentaires)
+ *  - @/components/creatBook/BookManager (Dialog CRUD livre)
+ *  - @/components/creatBook/BookNodeManager (Arbre hiérarchique)
+ *  - @/components/creatBook/BookNodeContentManager (Éditeur)
+ *  - @/components/creatBook/CommentManager (Commentaires)
  * 
  * Hooks :
- *  - useBooks (SWR - récupération liste livres)
- *  - useBookNodes (SWR - récupération nœuds)
- *  - useBookSession (Zustand - état navigation)
- * 
- * Routes API utilisées :
- *  - GET /api/book (via useBooks)
- *  - GET /api/bookNode?bookId={id} (via useBookNodes)
- * 
- * Props envoyées :
- *  - BookManager: { isOpen, onClose, onSuccess, editingBook? }
- *  - BookNodeManager: { nodes, bookId }
- *  - BookNodeContentManager: (aucune prop - utilise le store)
- *  - CommentManager: (aucune prop - utilise le store)
- * 
- * UI :
- *  - shadcn/ui : Card, Button, Dialog
- *  - lucide-react : icônes
- *  - Responsive (mobile-first) avec Tailwind CSS
- *  - Accessible (ARIA, focus states, contraste)
+ *  - useBooks, useBookNodes (SWR)
+ *  - useBookSession (Zustand)
  */
 
 'use client';
@@ -44,8 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, BookOpen, PlusCircle, FolderTree, RefreshCw } from 'lucide-react';
 import { Book } from '@/lib/generated/prisma';
 
-// Composants métier
-import UserInfo from '@/components/creatBook/UserInfo';
+// Import des composants métier (UserInfo supprimé)
 import BookManager from '@/components/creatBook/BookManager';
 import BookNodeManager from '@/components/creatBook/BookNodeManager';
 import BookNodeContentManager from '@/components/creatBook/BookNodeContentManager';
@@ -91,154 +73,159 @@ export default function ViewBookPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      {/* SECTION 1 : User Info + Sélecteur de Livre */}
-      <aside className="lg:w-1/4 space-y-4">
-        {/* Informations utilisateur */}
-        <UserInfo />
+    <div className="container mx-auto p-4 min-h-[calc(100vh-80px)]">
+      
+      {/* LAYOUT GRID : 1 colonne mobile, 3 colonnes desktop */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-        {/* Liste des livres */}
-        <Card className="border-2 border-border/50 bg-card rounded-2xl shadow-md hover:shadow-lg transition-shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-lg flex items-center gap-2 text-foreground">
-                <BookOpen className="w-5 h-5 text-primary" aria-hidden="true" /> 
-                Mes Livres
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1.5 hover:bg-primary/10 transition-colors"
-                onClick={handleCreateBook}
-                aria-label="Créer un nouveau livre"
-              >
-                <PlusCircle className="w-4 h-4" aria-hidden="true" /> 
-                Nouveau
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            {/* État : Chargement */}
-            {isLoading && (
-              <div className="flex justify-center py-8 text-muted-foreground" role="status">
-                <Loader2 className="animate-spin h-6 w-6" aria-label="Chargement des livres" />
-              </div>
-            )}
-
-            {/* État : Erreur */}
-            {isError && (
-              <div className="py-4 text-center">
-                <p className="text-sm text-destructive mb-2">Erreur lors du chargement</p>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={refresh}
-                  className="flex items-center gap-2 mx-auto"
+        {/* =======================================================
+            COLONNE GAUCHE (1/3) : Navigation (Livres + Arbre)
+           ======================================================= */}
+        <aside className="lg:col-span-1 flex flex-col gap-6">
+          
+          {/* CARTE 1 : Liste des Livres */}
+          <Card className="border-2 border-primary/20 bg-card/50 backdrop-blur-sm shadow-sm">
+            <CardHeader className="pb-3 border-b border-border/50">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg flex items-center gap-2 text-primary">
+                  <BookOpen className="w-5 h-5" aria-hidden="true" /> 
+                  Mes Livres
+                </h2>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-1.5 hover:bg-primary hover:text-primary-foreground transition-colors"
+                  onClick={handleCreateBook}
+                  aria-label="Créer un nouveau livre"
                 >
-                  <RefreshCw className="w-4 h-4" />
-                  Réessayer
+                  <PlusCircle className="w-4 h-4" aria-hidden="true" /> 
+                  Nouveau
                 </Button>
               </div>
-            )}
+            </CardHeader>
 
-            {/* État : Liste des livres */}
-            {!isLoading && !isError && (
-              <div className="flex flex-col gap-2">
-                {books.map((book) => (
-                  <div key={book.id} className="flex items-center gap-2">
-                    <Button
-                      variant={selectedBookId === book.id ? 'default' : 'ghost'}
-                      className="justify-start flex-1 text-left hover:bg-accent"
-                      onClick={() => setBookId(book.id)}
-                      aria-pressed={selectedBookId === book.id}
-                    >
-                      <span className="truncate">{book.title}</span>
-                    </Button>
-                    
-                    {/* Bouton d'édition (visible au survol) */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 hover:opacity-100 focus:opacity-100 transition-opacity"
-                      onClick={() => handleEditBook(book)}
-                      aria-label={`Éditer ${book.title}`}
-                    >
-                      ✏️
-                    </Button>
-                  </div>
-                ))}
+            <CardContent className="pt-4 max-h-[300px] overflow-y-auto custom-scrollbar">
+              {/* État : Chargement */}
+              {isLoading && (
+                <div className="flex justify-center py-8 text-muted-foreground" role="status">
+                  <Loader2 className="animate-spin h-6 w-6" aria-label="Chargement des livres" />
+                </div>
+              )}
 
-                {/* État vide */}
-                {books.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-6">
-                    Aucun livre trouvé. Créez-en un !
-                  </p>
-                )}
+              {/* État : Erreur */}
+              {isError && (
+                <div className="py-4 text-center">
+                  <p className="text-sm text-destructive mb-2">Erreur de chargement</p>
+                  <Button variant="outline" size="sm" onClick={refresh} className="gap-2">
+                    <RefreshCw className="w-4 h-4" /> Réessayer
+                  </Button>
+                </div>
+              )}
+
+              {/* État : Liste */}
+              {!isLoading && !isError && (
+                <div className="flex flex-col gap-2">
+                  {books.map((book) => (
+                    <div key={book.id} className="flex items-center gap-2 group">
+                      <Button
+                        variant={selectedBookId === book.id ? 'default' : 'outline'}
+                        className={`justify-start flex-1 text-left transition-all ${
+                          selectedBookId === book.id 
+                            ? 'bg-primary text-primary-foreground shadow-md' 
+                            : 'hover:border-primary/50 hover:bg-accent'
+                        }`}
+                        onClick={() => setBookId(book.id)}
+                        aria-pressed={selectedBookId === book.id}
+                      >
+                        <span className="truncate">{book.title}</span>
+                      </Button>
+                      
+                      {/* Bouton Édition (visible au survol) */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-primary"
+                        onClick={() => handleEditBook(book)}
+                        aria-label={`Éditer ${book.title}`}
+                      >
+                        ✏️
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  {books.length === 0 && (
+                    <div className="text-center py-6 text-muted-foreground bg-muted/30 rounded-lg border border-dashed">
+                      <p className="text-sm">Aucun livre.</p>
+                      <Button variant="link" onClick={handleCreateBook} className="text-xs">
+                        Créez votre premier livre !
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* CARTE 2 : Arbre du livre (Plan) */}
+          <Card className="border-2 border-border bg-card shadow-sm flex-1 min-h-[400px]">
+            <CardHeader className="pb-3 border-b border-border/50 bg-muted/10">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-lg flex items-center gap-2 text-foreground">
+                  <FolderTree className="w-5 h-5 text-primary" aria-hidden="true" /> 
+                  Plan du Livre
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetSession}
+                  disabled={!selectedBookId}
+                  aria-label="Réinitialiser la sélection"
+                  className="text-xs hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                >
+                  Réinitialiser
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </aside>
+            </CardHeader>
 
-      {/* SECTION 2 : Arbre des nœuds (Plan du livre) */}
-      <aside className="lg:w-1/4 space-y-4">
-        <Card className="border-2 border-border/50 bg-card rounded-2xl shadow-md h-full flex flex-col">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-lg flex items-center gap-2 text-foreground">
-                <FolderTree className="w-5 h-5 text-primary" aria-hidden="true" /> 
-                Plan du Livre
-              </h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={resetSession}
-                disabled={!selectedBookId}
-                aria-label="Réinitialiser la sélection"
-                className="hover:bg-destructive/10 disabled:opacity-50"
-              >
-                Réinitialiser
-              </Button>
-            </div>
-          </CardHeader>
+            <CardContent className="pt-4 overflow-y-auto max-h-[60vh] custom-scrollbar">
+              {!selectedBookId ? (
+                <div className="flex flex-col items-center justify-center h-[200px] text-center text-muted-foreground">
+                  <BookOpen className="w-10 h-10 mb-2 opacity-20" />
+                  <p className="text-sm">Sélectionnez un livre ci-dessus<br/>pour afficher sa structure.</p>
+                </div>
+              ) : isLoadingNodes ? (
+                <div className="flex justify-center py-10 text-muted-foreground">
+                  <Loader2 className="animate-spin h-6 w-6" />
+                </div>
+              ) : (
+                <BookNodeManager 
+                  nodes={nodes} 
+                  bookId={selectedBookId} 
+                />
+              )}
+            </CardContent>
+          </Card>
+        </aside>
 
-          <CardContent className="overflow-y-auto flex-1 max-h-[70vh]">
-            {/* État : Aucun livre sélectionné */}
-            {!selectedBookId && (
-              <p className="text-sm text-muted-foreground text-center py-10">
-                👈 Sélectionne un livre pour afficher sa structure.
-              </p>
-            )}
+        {/* =======================================================
+            COLONNE DROITE (2/3) : Contenu Principal
+           ======================================================= */}
+        <main className="lg:col-span-2 flex flex-col gap-6">
+          
+          {/* BLOC 1 : Éditeur de Contenu */}
+          <div className="min-h-[500px]">
+            <BookNodeContentManager />
+          </div>
 
-            {/* État : Chargement des nœuds */}
-            {selectedBookId && isLoadingNodes && (
-              <div className="flex justify-center py-8">
-                <Loader2 className="animate-spin h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
+          {/* BLOC 2 : Commentaires */}
+          <div className="min-h-[300px]">
+            <CommentManager />
+          </div>
+        </main>
 
-            {/* État : Affichage de l'arbre */}
-            {selectedBookId && !isLoadingNodes && (
-              <BookNodeManager 
-                nodes={nodes} 
-                bookId={selectedBookId} 
-              />
-            )}
-          </CardContent>
-        </Card>
-      </aside>
+      </div>
 
-      {/* SECTION 3 : Contenu + Commentaires */}
-      <main className="flex-1 space-y-4">
-        {/* Éditeur de contenu (dépend du nodeId sélectionné dans le store) */}
-        <BookNodeContentManager />
-
-        {/* Section commentaires (dépend du nodeId sélectionné) */}
-        <CommentManager />
-      </main>
-
-      {/* DIALOG : Création/Édition de livre */}
+      {/* MODAL : Gestion Livre (Hors flux) */}
       <BookManager
         isOpen={isBookDialogOpen}
         onClose={() => {

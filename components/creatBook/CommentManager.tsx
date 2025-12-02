@@ -155,7 +155,7 @@ const CommentManagerForm = ({
             handleSubmit(e);
           }
         }}
-      />
+      /> 
       <Button 
         type="submit" 
         size="icon" 

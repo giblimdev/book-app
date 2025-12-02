@@ -18,11 +18,11 @@ const navLinks = [
   },
   {
     href: "/book",
-    label: "Mes books",
+    label: "Mes-books",
     icon: BookOpen,
   },
   {
-    href: "/w",
+    href: "/viewBook",
     label: "test",
     icon: Plus,
   },

@@ -35,7 +35,7 @@ import { useBookSession } from "@/Store/useBookNavStore";
 type BookListProps = {
   books: Book[];
   selectedBookId?: string | null;
-  onSelect: (bookId: string) => void;
+  onSelect: (bookId: string) => void; 
   onEdit: (book: Book) => void;
   onDelete: (bookId: string) => void;
   onReorder: (orderedIds: string[]) => void;

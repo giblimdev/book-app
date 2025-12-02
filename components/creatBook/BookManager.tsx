@@ -86,4 +86,4 @@ const BookManager: React.FC<BookManagerProps> = ({
   );
 };
 
-export default BookManager;
+export default BookManager; 

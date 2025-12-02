@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowUp,
+  ArrowUp, 
   ArrowDown,
   CornerUpRight,
   CornerDownLeft,

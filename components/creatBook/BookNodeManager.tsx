@@ -1,5 +1,5 @@
 //@/components/creatBook/BookNodeManager.tsx
-/**
+/** 
  * Rôle :
  *  - Affiche la structure hiérarchique (arbre) du livre.
  *  - Permet de naviguer entre les chapitres/sections.
