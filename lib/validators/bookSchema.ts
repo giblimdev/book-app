@@ -8,9 +8,11 @@ import { z } from 'zod';
 
 /**
  * Schéma de base pour un Book (tous les champs possibles)
+ * Correction: authorId accepte uuid() ou cuid() ou simplement string() selon la DB.
+ * Ici j'utilise string().min(1) pour être permissif et compatible UUID/CUID.
  */
 export const bookSchema = z.object({
-  id: z.string().cuid().optional(),
+  id: z.string().optional(),
   title: z.string()
     .min(1, 'Le titre est obligatoire')
     .max(255, 'Le titre ne peut pas dépasser 255 caractères')
@@ -28,14 +30,13 @@ export const bookSchema = z.object({
     .int('L\'ordre doit être un nombre entier')
     .min(0, 'L\'ordre doit être positif ou nul')
     .default(0),
-  authorId: z.string().cuid('ID auteur invalide'),
+  authorId: z.string().min(1, 'ID auteur invalide'), // Accepte UUID et CUID
   createdAt: z.date().optional(),
   updatedAt: z.date().optional(),
 });
 
 /**
  * Schéma pour la CRÉATION d'un livre (POST)
- * Seuls les champs obligatoires + optionnels utilisateur
  */
 export const bookCreateSchema = z.object({
   title: z.string()
@@ -56,15 +57,14 @@ export const bookCreateSchema = z.object({
     .min(0)
     .default(0)
     .optional(),
-  authorId: z.string().cuid('ID auteur invalide'),
+  authorId: z.string().min(1, 'ID auteur invalide'), // CORRECTION ICI
 });
 
 /**
  * Schéma pour la MISE À JOUR complète d'un livre (PUT)
- * Tous les champs obligatoires sauf timestamps
  */
 export const bookUpdateSchema = z.object({
-  id: z.string().cuid('ID invalide'),
+  id: z.string().min(1, 'ID invalide'),
   title: z.string()
     .min(1, 'Le titre est obligatoire')
     .max(255, 'Le titre ne peut pas dépasser 255 caractères')
@@ -82,15 +82,14 @@ export const bookUpdateSchema = z.object({
     .int()
     .min(0)
     .default(0),
-  authorId: z.string().cuid('ID auteur invalide'),
+  authorId: z.string().min(1, 'ID auteur invalide'),
 });
 
 /**
  * Schéma pour la MISE À JOUR PARTIELLE d'un livre (PATCH)
- * Tous les champs sont optionnels sauf l'ID
  */
 export const bookPatchSchema = z.object({
-  id: z.string().cuid('ID invalide'),
+  id: z.string().min(1, 'ID invalide'),
   title: z.string()
     .min(1, 'Le titre ne peut pas être vide')
     .max(255, 'Le titre ne peut pas dépasser 255 caractères')
@@ -109,32 +108,29 @@ export const bookPatchSchema = z.object({
     .int()
     .min(0)
     .optional(),
-}).strict(); // Refuse les champs non définis
+}).strict();
 
 /**
  * Schéma pour la SUPPRESSION d'un livre (DELETE)
  */
 export const bookDeleteSchema = z.object({
-  id: z.string().cuid('ID invalide'),
+  id: z.string().min(1, 'ID invalide'),
 });
 
 /**
  * Schéma pour la requête GET d'un livre unique
  */
 export const bookGetByIdSchema = z.object({
-  id: z.string().cuid('ID invalide'),
+  id: z.string().min(1, 'ID invalide'),
 });
 
 /**
  * Schéma pour la requête GET de tous les livres d'un auteur
  */
 export const bookGetByAuthorSchema = z.object({
-  authorId: z.string().cuid('ID auteur invalide'),
+  authorId: z.string().min(1, 'ID auteur invalide'),
 });
 
-/**
- * Types TypeScript inférés depuis les schémas
- */
 export type Book = z.infer<typeof bookSchema>;
 export type BookCreate = z.infer<typeof bookCreateSchema>;
 export type BookUpdate = z.infer<typeof bookUpdateSchema>;

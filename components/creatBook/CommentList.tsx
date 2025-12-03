@@ -40,7 +40,7 @@ export default function CommentManagerList({
       </div>
     );
   }
-
+ 
   return (
     <TooltipProvider delayDuration={100}>
       <div className="space-y-6">

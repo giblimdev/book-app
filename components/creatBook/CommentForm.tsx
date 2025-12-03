@@ -17,7 +17,7 @@ const commentSchema = z.object({
   content: z.string().min(1, 'Le commentaire ne peut pas être vide.'),
 });
 type CommentFormValues = z.infer<typeof commentSchema>;
-
+ 
 interface CommentManagerFormProps {
   nodeId: string;
   onCommentAdded: () => void; // Callback pour revalider les données

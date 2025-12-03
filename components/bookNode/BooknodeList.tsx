@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import BookNodeForm from "./BookNodeForm";
-import { BookNode } from "@/lib/generated/prisma/client";
+import { BookNode } from "@/lib/generated/prisma";
 
 // Type étendu qui inclut les relations
 type BookNodeWithRelations = BookNode & {

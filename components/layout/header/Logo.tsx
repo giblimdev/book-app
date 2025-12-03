@@ -33,7 +33,7 @@ export default function Logo({
   // Logo de fallback - identique côté serveur et client
   const FallbackLogo = () => (
     <div
-      className={`flex items-center justify-center bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg ${className}`}
+      className={`flex items-center justify-center bg-linear-to-r from-blue-600 to-purple-600 text-white font-bold rounded-lg ${className}`}
       style={{
         width: `${width}px`,
         height: `${height}px`,

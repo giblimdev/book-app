@@ -218,7 +218,7 @@ export default function BookNodeManager() {
           )}
         </DialogContent>
       </Dialog>
-
+ 
       {/* Confirmation Suppression */}
       <ConfirmDialog
         open={!!nodeToDelete}

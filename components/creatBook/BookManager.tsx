@@ -7,15 +7,16 @@ import { useBookNavStore } from '@/Store/useBookNavStore';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'; 
 import { toast } from 'sonner';
 import { BookOpen, Edit2, Plus, RotateCw } from 'lucide-react';
 import { Book } from '@/lib/generated/prisma';
+import {useSession} from "@/lib/auth/auth-client"
 
-import BookList from './BookList';
+import BookList from './BookList'; 
 import BookForm from './BookForm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-
+ 
 export default function BookManager() {
   // État global (Zustand)
   const { selectedBookId, setBookId } = useBookNavStore();

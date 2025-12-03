@@ -1,3 +1,4 @@
+//@/app/api/book/bookNodeContent
 /**
  * @file app/api/book/bookNodeContent/route.ts
  * @type Route API Next.js (App Router)

@@ -89,3 +89,4 @@ export default function BookNodeContentList({ contents, onEdit, onDelete }: Book
     </div>
   );
 }
+  

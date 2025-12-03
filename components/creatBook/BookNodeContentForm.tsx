@@ -89,9 +89,9 @@ export default function BookNodeContentForm({
       const body = isEdit
         ? { id: contentInit.id, ...values }
         : { nodeId, ...values, order: 0 }; // Order géré côté backend ou optimisé ici
-
+ 
       const res = await fetch(url, {
-        method,
+        method, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });

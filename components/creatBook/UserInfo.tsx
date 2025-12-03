@@ -1,24 +1,3 @@
-//@/components/creatBook/UserInfo.tsx
-/**
- * Rôle :
- *  - Affiche les informations de l'utilisateur connecté.
- *  - Gère l'état de chargement et les cas non connectés.
- * 
- * Responsabilités :
- *  - Récupère la session utilisateur via useSession().
- *  - Affiche l'avatar, le nom, et l'email.
- *  - Fournit un bouton de déconnexion (signOut).
- * 
- * Utilise :
- *  - useSession(), signOut depuis @/lib/auth/auth-client
- *  - shadcnUI : Card, Avatar, Button
- *  - lucide-react : icons
- * 
- * Accessibilité :
- *  - Texte alternatif pour l'image
- *  - Couleurs accessibles (bg-card / text-foreground)
- */
-
 "use client";
 
 import React from "react";
@@ -28,10 +7,16 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Loader2, LogOut } from "lucide-react";
 
+/**
+ * Rôle :
+ *  - Affiche les informations de l'utilisateur connecté.
+ *  - Gère l'état de chargement et les cas non connectés.
+ */
 export default function UserInfo() {
-  const { data: session, isLoading } = useSession();
+  // Correction: utilisation de isPending au lieu de isLoading
+  const { data: session, isPending } = useSession();
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <Card className="p-4 flex justify-center items-center bg-card rounded-2xl shadow-sm">
         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -53,7 +38,7 @@ export default function UserInfo() {
 
   return (
     <Card className="p-4 bg-card rounded-2xl shadow-sm">
-      <CardContent className="flex items-center gap-3">
+      <CardContent className="flex items-center gap-3 p-0"> {/* Ajout de p-0 car CardContent a du padding par défaut */}
         <Avatar className="w-12 h-12 border border-border">
           <AvatarImage
             src={user.image ?? "https://i.pravatar.cc/100"}
@@ -64,7 +49,7 @@ export default function UserInfo() {
           </AvatarFallback>
         </Avatar>
 
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 min-w-0"> {/* min-w-0 pour le truncate */}
           <span className="font-semibold text-sm text-foreground truncate">
             {user.name ?? "Utilisateur"}
           </span>
@@ -79,10 +64,9 @@ export default function UserInfo() {
           onClick={() => signOut()}
           aria-label="Se déconnecter"
         >
-          <LogOut className="w-4 h-4 text-muted-foreground hover:text-foreground transition-colors" />
+          <LogOut className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
         </Button>
       </CardContent>
     </Card>
   );
 }
-/*Property 'isLoading' does not exist on type '{ data: { user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }; session: { id: string; createdAt: Date; ... 5 more ...; userAgent?: string | ... 1 more ... | undefined; }; } | null; isPending: boolean; isRefetching: boolean; e...'.Property 'isLoading' does not exist on type '{ data: { user: { id: string; createdAt: Date; updatedAt: Date; email: string; emailVerified: boolean; name: string; image?: string | null | undefined; }; session: { id: string; createdAt: Date; ... 5 more ...; userAgent?: string | ... 1 more ... | undefined; }; } | null; isPending: boolean; isRefetching: boolean; e...'. */

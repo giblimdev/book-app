@@ -1,4 +1,4 @@
-//@/hooks/useBooks.ts
+//@/hooks/useBooks.ts 
 /**
  * @file hooks/useBooks.ts
  * @type Collection de hooks React personnalisés (SWR + mutations)
@@ -20,7 +20,7 @@
  * @api
  * - GET /api/book/books → useBooks()
  * - GET /api/book/bookNode?bookId=xxx → useBookNodes(bookId)
- * - POST /api/book/books → createBook
+ * - POST /api/book/books → createBook dois passer l'id author où le gérer ? ici ? dans BookForm ? dans BookManager .
  * - PATCH /api/book/books → updateBook (id dans body)
  * - DELETE /api/book/books → deleteBook (id dans body)
  * 
@@ -56,10 +56,9 @@
 import useSWR, { mutate } from 'swr';
 import { Book, BookNode } from '@/lib/generated/prisma';
 import { toast } from 'sonner';
-
 /**
  * Clés API standardisées (REST)
- */
+ */ 
 const API_KEYS = {
   BOOKS: '/api/book/books',
   NODES: (bookId: string) => `/api/book/bookNode?bookId=${bookId}`,
@@ -204,3 +203,4 @@ export const useBookActions = () => {
 
   return { createBook, updateBook, deleteBook };
 };
+ 

@@ -1,5 +1,5 @@
 //@/components/creatBook/BookNodeList.tsx
-'use client';
+'use client'; 
 
 import React from 'react';
 import { BookNode } from '@/lib/generated/prisma';

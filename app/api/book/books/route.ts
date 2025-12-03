@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { 
   bookCreateSchema, 
-  bookUpdateSchema, 
+  bookUpdateSchema,  
   bookPatchSchema, 
-  bookDeleteSchema 
+  bookDeleteSchema  
 } from '@/lib/validators/bookSchema';
 
 // GET: Récupérer tous les livres ou un livre spécifique
@@ -51,9 +51,14 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // Ajout du log pour debug
+    console.log('[API BOOKS_POST] Données reçues :', body);
+
     const validation = bookCreateSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error('[console error BOOKS_POST] Erreur validation :', validation.error.format());
       return NextResponse.json({ error: validation.error.format() }, { status: 400 });
     }
 
@@ -141,3 +146,10 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Erreur suppression' }, { status: 500 });
   }
 }
+/*[API BOOKS_POST] Données reçues : {
+  title: 'livre1',
+  description: '',
+  authorId: 'd3aece17-7266-4348-8f81-20f8f27d5e2a'
+}
+[xonsole error BOOKS_POST] Erreur validation : { _errors: [], authorId: { _errors: [ 'ID auteur invalide' ] } }
+ POST /api/book/books 400 in 29ms */

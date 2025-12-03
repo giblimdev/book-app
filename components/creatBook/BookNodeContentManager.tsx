@@ -17,11 +17,11 @@ import {
   Plus, FileText, Image as ImageIcon, Code2, 
   Lightbulb, Quote, AlertTriangle, MessageSquare 
 } from 'lucide-react';
-
+  
 import BookNodeContentList from '@/components/creatBook/BookNodeContentList';
 import BookNodeContentForm from '@/components/creatBook/BookNodeContentForm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-
+ 
 // --- Types de Blocs Disponibles ---
 const BLOCK_TYPES = [
   { type: 'TEXT', label: 'Texte', icon: FileText },
@@ -37,7 +37,7 @@ export default function BookNodeContentManager() {
 
   // SWR Fetching
   const { data: contents, isLoading, error } = useSWR<NodeContent[]>(
-    selectedNodeId ? `/api/book/nodeContent?nodeId=${selectedNodeId}` : null,
+    selectedNodeId ? `/api/book/bookNodeContent?nodeId=${selectedNodeId}` : null,
     fetcher
   );
 
@@ -76,7 +76,7 @@ export default function BookNodeContentManager() {
 
     // Optimistic update (optionnel, ici on fait simple avec revalidation)
     try {
-      const res = await fetch('/api/book/nodeContent', {
+      const res = await fetch('/api/book/bookNodeContent', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: contentToDelete }),
@@ -85,7 +85,7 @@ export default function BookNodeContentManager() {
       if (!res.ok) throw new Error();
 
       toast.success('Bloc supprimé');
-      mutate(`/api/book/nodeContent?nodeId=${selectedNodeId}`);
+      mutate(`/api/book/bookNodeContent?nodeId=${selectedNodeId}`);
     } catch {
       toast.error('Erreur lors de la suppression');
     } finally {
@@ -96,7 +96,7 @@ export default function BookNodeContentManager() {
 
   const handleFormSuccess = () => {
     setIsFormOpen(false);
-    mutate(`/api/book/nodeContent?nodeId=${selectedNodeId}`);
+    mutate(`/api/book/BookNodeContent?nodeId=${selectedNodeId}`);
   };
 
   // --- Rendu ---
