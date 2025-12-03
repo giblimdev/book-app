@@ -166,6 +166,12 @@ import React from 'react'
 
 export default function page() {
   return (
-    <div>page</div>
+    <div>
+      <h1>Livre</h1>
+      <h2>partie</h2>
+      <h3>chapitre</h3>
+      <h4>section</h4>
+      <h5>paragraphe</h5>
+    </div>
   )
 }
