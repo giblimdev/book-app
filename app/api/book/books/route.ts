@@ -1,115 +1,143 @@
- //@/app/api/book/books/route.ts 
-/* Rôle : 
-Gestion CRUD des Livres. La sécurité sera pour la v2 
- - GET : Récupérer les livres.
- - POST : Créer un livre 
- - PATCH/DELETE : 
-*/ 
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // Assurez-vous que ce chemin est correct
-import { z } from "zod";
+/**
+ * @file app/api/book/books/route.ts
+ * @type Route API Next.js (App Router)
+ * @role API CRUD complète pour les Livres (Book)
+ */
 
-// Schéma de validation pour un livre
-const bookSchema = z.object({
-  title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
-  description: z.string().optional(),
-  image: z.string().url().optional().or(z.literal("")),
-  order: z.number().int().optional(),
-  isPublished: z.boolean().optional(),
-});
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { 
+  bookCreateSchema, 
+  bookUpdateSchema, 
+  bookPatchSchema, 
+  bookDeleteSchema 
+} from '@/lib/validators/bookSchema';
 
-// GET: Récupérer tous les livres (ou un seul si ?id=...)
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-
+// GET: Récupérer tous les livres ou un livre spécifique
+export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const authorId = searchParams.get('authorId');
+
+    // Cas 1: Livre unique par ID
     if (id) {
       const book = await prisma.book.findUnique({
         where: { id },
-        include: { bookNodes: true }, // Inclure les nœuds si besoin
+        include: { author: { select: { name: true, image: true } } }
       });
-      if (!book) {
-        return NextResponse.json({ error: "Livre non trouvé" }, { status: 404 });
-      }
+      
+      if (!book) return NextResponse.json({ error: 'Livre non trouvé' }, { status: 404 });
       return NextResponse.json(book);
     }
 
-    // Liste de tous les livres (filtrer par auteur si auth implémenté)
+    // Cas 2: Filtrage par auteur (optionnel, sinon tous les livres)
+    const where = authorId ? { authorId } : {};
+    
     const books = await prisma.book.findMany({
-      orderBy: { order: "asc" },
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: { author: { select: { name: true, image: true } } }
     });
+
     return NextResponse.json(books);
   } catch (error) {
-    console.error("Erreur GET /api/book:", error);
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    console.error('[BOOKS_GET]', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
   }
 }
 
 // POST: Créer un nouveau livre
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    // TODO: Récupérer l'ID de l'utilisateur connecté via session
-    // const session = await auth.api.getSession({ headers: req.headers });
-    // const authorId = session?.user?.id;
-    const authorId = "user1"; // Mock ID pour l'exemple, à remplacer
+    const validation = bookCreateSchema.safeParse(body);
 
-    const parsed = bookSchema.parse(body);
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
 
     const newBook = await prisma.book.create({
-      data: {
-        ...parsed,
-        authorId: authorId, 
-      },
+      data: validation.data
     });
 
     return NextResponse.json(newBook, { status: 201 });
   } catch (error) {
-    console.error("Erreur POST /api/book:", error);
-    if (error instanceof z.ZodError) {
-        return NextResponse.json({ error: error.errors }, { status: 400 });
-    }
-    return NextResponse.json({ error: "Erreur lors de la création" }, { status: 500 });
+    console.error('[BOOKS_POST]', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
   }
 }
 
-// PATCH: Mise à jour partielle (ex: titre, ordre)
-export async function PATCH(req: Request) {
+// PUT: Mise à jour complète
+export async function PUT(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "ID requis" }, { status: 400 });
-
     const body = await req.json();
-    const parsed = bookSchema.partial().parse(body);
+    const validation = bookUpdateSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
+
+    const { id, ...data } = validation.data;
+
+    // Vérification existence
+    const exists = await prisma.book.findUnique({ where: { id } });
+    if (!exists) return NextResponse.json({ error: 'Livre introuvable' }, { status: 404 });
 
     const updatedBook = await prisma.book.update({
       where: { id },
-      data: parsed,
+      data
     });
 
     return NextResponse.json(updatedBook);
   } catch (error) {
-    console.error("Erreur PATCH /api/book:", error);
-    return NextResponse.json({ error: "Erreur de mise à jour" }, { status: 500 });
+    console.error('[BOOKS_PUT]', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
+  }
+}
+
+// PATCH: Mise à jour partielle
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const validation = bookPatchSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
+
+    const { id, ...data } = validation.data;
+
+    const updatedBook = await prisma.book.update({
+      where: { id },
+      data
+    });
+
+    return NextResponse.json(updatedBook);
+  } catch (error) {
+    // Gestion erreur Prisma si ID inexistant
+    console.error('[BOOKS_PATCH]', error);
+    return NextResponse.json({ error: 'Erreur mise à jour ou ID invalide' }, { status: 500 });
   }
 }
 
 // DELETE: Supprimer un livre
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    if (!id) return NextResponse.json({ error: "ID requis" }, { status: 400 });
+    const body = await req.json();
+    const validation = bookDeleteSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: 'ID requis dans le body' }, { status: 400 });
+    }
 
     await prisma.book.delete({
-      where: { id },
+      where: { id: validation.data.id }
     });
 
-    return NextResponse.json({ message: "Livre supprimé" });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
-    console.error("Erreur DELETE /api/book:", error);
-    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 });
+    console.error('[BOOKS_DELETE]', error);
+    return NextResponse.json({ error: 'Erreur suppression' }, { status: 500 });
   }
 }

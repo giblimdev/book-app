@@ -1,18 +1,23 @@
 // @/app/api/books/[bookId]/nodes/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { bookId: string } }
-) {
+// Définition du type pour les params asynchrones
+type RouteParams = {
+  params: Promise<{ bookId: string }>;
+};
+
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
+    // 1. Attendre la résolution des paramètres
+    const { bookId } = await params;
+
     const body = await req.json();
     const { title, description, type, parentId, order } = body;
 
     // Vérifier que le livre existe
     const book = await prisma.book.findUnique({
-      where: { id: params.bookId },
+      where: { id: bookId }, // Utilisation de la variable extraite
     });
 
     if (!book) {
@@ -27,7 +32,7 @@ export async function POST(
         type,
         order: order || 0,
         parentId: parentId || null,
-        bookId: params.bookId,
+        bookId: bookId, // Utilisation de la variable extraite
       },
     });
 

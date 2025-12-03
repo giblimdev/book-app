@@ -1,14 +1,19 @@
 // @/app/api/books/[bookId]/route.ts
 import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth/auth-server";
 
+// Définition du type pour les params asynchrones (Next.js 15)
+type RouteParams = {
+  params: Promise<{ bookId: string }>;
+};
+
 // PUT /api/books/[bookId]
-export async function PUT(
-  req: Request,
-  { params }: { params: { bookId: string } }
-) {
+export async function PUT(req: Request, { params }: RouteParams) {
   try {
+    // 1. Await des params
+    const { bookId } = await params;
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -23,7 +28,7 @@ export async function PUT(
 
     const existingBook = await prisma.book.findFirst({
       where: {
-        id: params.bookId,  // Changé en bookId
+        id: bookId, // Utilisation de la variable destructurée
         authorId: user.id,
       },
     });
@@ -36,7 +41,7 @@ export async function PUT(
     }
 
     const book = await prisma.book.update({
-      where: { id: params.bookId },  // Changé en bookId
+      where: { id: bookId },
       data: {
         title: body.title?.trim(),
         description: body.description?.trim() || null,
@@ -70,11 +75,11 @@ export async function PUT(
 }
 
 // PATCH /api/books/[bookId] - mise à jour de l'ordre
-export async function PATCH(
-  req: Request,
-  { params }: { params: { bookId: string } }
-) {
+export async function PATCH(req: Request, { params }: RouteParams) {
   try {
+    // 1. Await des params
+    const { bookId } = await params;
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -94,7 +99,7 @@ export async function PATCH(
 
     const existingBook = await prisma.book.findFirst({
       where: {
-        id: params.bookId,  // Changé en bookId
+        id: bookId,
         authorId: user.id,
       },
     });
@@ -107,7 +112,7 @@ export async function PATCH(
     }
 
     const updated = await prisma.book.update({
-      where: { id: params.bookId },  // Changé en bookId
+      where: { id: bookId },
       data: {
         order: body.order,
       },
@@ -132,11 +137,11 @@ export async function PATCH(
 }
 
 // DELETE /api/books/[bookId]
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { bookId: string } }
-) {
+export async function DELETE(_req: Request, { params }: RouteParams) {
   try {
+    // 1. Await des params
+    const { bookId } = await params;
+
     const user = await getCurrentUser();
 
     if (!user) {
@@ -145,7 +150,7 @@ export async function DELETE(
 
     const existingBook = await prisma.book.findFirst({
       where: {
-        id: params.bookId,  // Changé en bookId
+        id: bookId,
         authorId: user.id,
       },
     });
@@ -158,7 +163,7 @@ export async function DELETE(
     }
 
     await prisma.book.delete({
-      where: { id: params.bookId },  // Changé en bookId
+      where: { id: bookId },
     });
 
     return NextResponse.json({ success: true });

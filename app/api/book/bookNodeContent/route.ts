@@ -1,97 +1,129 @@
-//@/app/api/book/bookNodeContent/route.ts
-/*
-Rôle : Endpoints API pour les opérations CRUD sur bookNodeContent
-Endpoints :
-•	POST /api/bookNodeContent - Créer un BookNodeContent 
-•	GET /api/bookNodeContent - Lister les BookNodeContent
-•	GET /api/bookNodeContent - Récupérer un BookNodeContente spécifique
-•	PUT /api/bookNodeContent - Mettre à jour un BookNodeContent spécifique
-•	PATCH /api/bookNodeContent - Mise à jour partielle (ordre, etc.) un BookNodeContent spécifique
-•	DELETE /api/bookNodeContent - Supprimer un BookNodeContent spécifique
-*/
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { z } from "zod";
+/**
+ * @file app/api/book/bookNodeContent/route.ts
+ * @type Route API Next.js (App Router)
+ * @role CRUD complet pour les NodeContent (Blocs de contenu)
+ */
 
-const contentSchema = z.object({
-  type: z.enum(["TEXT", "IMAGE", "VIDEO", "CODE", "WARNING", "info", "TIP", "EXERCISE"]).default("TEXT"),
-  content: z.string().default(""),
-  order: z.number().int().default(0),
-  nodeId: z.string().min(1, "Node ID requis"),
-  metadata: z.record(z.any()).optional(), // Pour stocker fontSize, language, etc.
-});
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { Prisma } from '@/lib/generated/prisma';
+import { 
+  nodeContentCreateSchema, 
+  nodeContentPatchSchema, 
+  nodeContentDeleteSchema 
+} from '@/lib/validators/nodeContentSchema';
 
-// GET: Récupérer les contenus d'un nœud spécifique
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const nodeId = searchParams.get("nodeId");
-
-  if (!nodeId) return NextResponse.json({ error: "nodeId requis" }, { status: 400 });
+  const nodeId = searchParams.get('nodeId');
+  const id = searchParams.get('id');
 
   try {
+    if (id) {
+      const content = await prisma.nodeContent.findUnique({ where: { id } });
+      if (!content) return NextResponse.json({ error: 'Contenu non trouvé' }, { status: 404 });
+      return NextResponse.json(content);
+    }
+
+    if (!nodeId) {
+      return NextResponse.json({ error: 'nodeId est requis' }, { status: 400 });
+    }
+
     const contents = await prisma.nodeContent.findMany({
       where: { nodeId },
-      orderBy: { order: "asc" },
+      orderBy: { order: 'asc' }
     });
+
     return NextResponse.json(contents);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+    console.error('[CONTENTS_GET]', error);
+    return NextResponse.json({ error: 'Erreur interne' }, { status: 500 });
   }
 }
 
-// POST: Ajouter un bloc de contenu
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const parsed = contentSchema.parse(body);
+    const validation = nodeContentCreateSchema.safeParse(body);
 
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
+
+    // 1. Séparer metadata pour traitement spécial
+    const { metadata, ...rest } = validation.data;
+
+    // 2. Convertir null/undefined en Prisma.DbNull
+    const metadataInput = (metadata === null || metadata === undefined) 
+      ? Prisma.DbNull 
+      : (metadata as Prisma.InputJsonValue);
+
+    // 3. Créer avec le type compatible
     const newContent = await prisma.nodeContent.create({
       data: {
-        type: parsed.type,
-        content: parsed.content,
-        order: parsed.order,
-        metadata: parsed.metadata || {},
-        node: { connect: { id: parsed.nodeId } },
-      },
+        ...rest,
+        metadata: metadataInput,
+      }
     });
 
     return NextResponse.json(newContent, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Erreur création contenu" }, { status: 500 });
+    console.error('[CONTENTS_POST]', error);
+    return NextResponse.json({ error: 'Erreur création' }, { status: 500 });
   }
 }
 
-// PATCH: Mettre à jour un bloc (contenu ou position)
-export async function PATCH(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "ID requis" }, { status: 400 });
-
+export async function PATCH(req: NextRequest) {
   try {
     const body = await req.json();
-    const parsed = contentSchema.partial().parse(body);
+    const validation = nodeContentPatchSchema.safeParse(body);
 
-    const updated = await prisma.nodeContent.update({
+    if (!validation.success) {
+      return NextResponse.json({ error: validation.error.format() }, { status: 400 });
+    }
+
+    const { id, metadata, ...rest } = validation.data;
+    
+    // 1. Préparer l'objet d'update avec le bon type Prisma
+    const updateData: Prisma.NodeContentUpdateInput = {
+      ...rest,
+    };
+
+    // 2. Assigner metadata seulement si présent dans la requête
+    if (metadata !== undefined) {
+      updateData.metadata = (metadata === null) 
+        ? Prisma.DbNull 
+        : (metadata as Prisma.InputJsonValue);
+    }
+
+    const updatedContent = await prisma.nodeContent.update({
       where: { id },
-      data: parsed,
+      data: updateData
     });
-    return NextResponse.json(updated);
+
+    return NextResponse.json(updatedContent);
   } catch (error) {
-    return NextResponse.json({ error: "Erreur mise à jour" }, { status: 500 });
+    console.error('[CONTENTS_PATCH]', error);
+    return NextResponse.json({ error: 'Erreur mise à jour' }, { status: 500 });
   }
 }
 
-// DELETE: Supprimer un bloc
-export async function DELETE(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
-  if (!id) return NextResponse.json({ error: "ID requis" }, { status: 400 });
-
+export async function DELETE(req: NextRequest) {
   try {
-    await prisma.nodeContent.delete({ where: { id } });
-    return NextResponse.json({ message: "Contenu supprimé" });
+    const body = await req.json();
+    const validation = nodeContentDeleteSchema.safeParse(body);
+
+    if (!validation.success) {
+      return NextResponse.json({ error: 'ID requis' }, { status: 400 });
+    }
+
+    await prisma.nodeContent.delete({
+      where: { id: validation.data.id }
+    });
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Erreur suppression" }, { status: 500 });
+    console.error('[CONTENTS_DELETE]', error);
+    return NextResponse.json({ error: 'Erreur suppression' }, { status: 500 });
   }
 }

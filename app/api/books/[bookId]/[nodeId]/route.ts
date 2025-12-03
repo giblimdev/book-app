@@ -1,14 +1,18 @@
 // @/app/api/books/[bookId]/[nodeId]/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { prisma } from "@/lib/prisma"; // Assurez-vous que l'import est nommé { prisma } si c'est un export nommé
 
+// Correction du type pour Next.js 15
 type RouteParams = {
-  params: { bookId: string; nodeId: string };
+  params: Promise<{ bookId: string; nodeId: string }>;
 };
 
 // Mettre à jour un BookNode
 export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
+    // 1. Attendre la résolution des params (Spécifique Next.js 15)
+    const { bookId, nodeId } = await params;
+
     const body = await req.json();
     const { title, description, type } = body;
 
@@ -23,8 +27,8 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
     // Vérifier que le node existe et appartient bien au livre
     const existingNode = await prisma.bookNode.findFirst({
       where: {
-        id: params.nodeId,
-        bookId: params.bookId,
+        id: nodeId,
+        bookId: bookId,
       },
     });
 
@@ -34,7 +38,7 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 
     // Mettre à jour le node
     const updatedNode = await prisma.bookNode.update({
-      where: { id: params.nodeId },
+      where: { id: nodeId },
       data: {
         title: title.trim(),
         description: description?.trim() || null,
@@ -56,11 +60,14 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
 // Supprimer un BookNode et tous ses enfants
 export async function DELETE(req: NextRequest, { params }: RouteParams) {
   try {
+    // 1. Attendre la résolution des params
+    const { bookId, nodeId } = await params;
+
     // Vérifier que le node existe et appartient bien au livre
     const existingNode = await prisma.bookNode.findFirst({
       where: {
-        id: params.nodeId,
-        bookId: params.bookId,
+        id: nodeId,
+        bookId: bookId,
       },
     });
 
@@ -68,11 +75,14 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Nœud non trouvé" }, { status: 404 });
     }
 
-    // Fonction récursive pour supprimer un node et tous ses enfants
-    const deleteNodeAndChildren = async (nodeId: string): Promise<void> => {
+    // Note: Si votre schéma Prisma a `onDelete: Cascade` sur la relation parent-enfants,
+    // cette fonction récursive n'est pas nécessaire, un simple delete suffit.
+    // Cependant, je garde votre logique actuelle au cas où le Cascade n'est pas configuré en DB.
+    
+    const deleteNodeAndChildren = async (targetNodeId: string): Promise<void> => {
       // Trouver tous les enfants directs
       const children = await prisma.bookNode.findMany({
-        where: { parentId: nodeId },
+        where: { parentId: targetNodeId },
         select: { id: true },
       });
 
@@ -81,14 +91,14 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
         await deleteNodeAndChildren(child.id);
       }
 
-      // Supprimer le node lui-même (avec cascade sur nodeContents et comments)
+      // Supprimer le node lui-même
       await prisma.bookNode.delete({
-        where: { id: nodeId },
+        where: { id: targetNodeId },
       });
     };
 
     // Lancer la suppression récursive
-    await deleteNodeAndChildren(params.nodeId);
+    await deleteNodeAndChildren(nodeId);
 
     return NextResponse.json({
       success: true,
