@@ -84,7 +84,7 @@ export default function BookNodeContentForm({
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const url = '/api/book/nodeContent';
+      const url = '/api/book/bookNodeContent';
       const method = isEdit ? 'PATCH' : 'POST';
       const body = isEdit
         ? { id: contentInit.id, ...values }
